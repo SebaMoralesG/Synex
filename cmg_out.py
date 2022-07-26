@@ -49,9 +49,9 @@ def export_excel(bus_list, data, data_aux1, data_aux2, type_flag, file_root, fil
                         'values':     [bus_list[i], 1, col, max_row, col],
                         'line':       {'color': line_color[col - 1]}
                     })
-                if language == "English":
+                if language:
                     chart.set_x_axis({'name': 'Date', 'name_font' : {'size' : 9}, 'num_font' : {'arial narrow' : True}})
-                elif language == "Spanish":
+                else:
                     chart.set_x_axis({'name': 'Fecha', 'name_font' : {'size' : 9}, 'num_font' : {'arial narrow' : True}})
                 chart.set_y_axis({'min': 0, 'name': 'CMg [USD/MWh]', 'major_gridlines': {'visible': True}, 'name_font' : {'size' : 9}, 'num_font' : {'arial narrow' : True}})
                 chart.set_legend({'position': 'bottom', 'font': {'size': 9, 'Arial Narrow': True}})
@@ -72,16 +72,16 @@ def export_excel(bus_list, data, data_aux1, data_aux2, type_flag, file_root, fil
                 (max_row, max_col) = data_out.shape
                 chart = writer.book.add_chart({'type':'line'})
                 line_color = ["green","blue","red"]
-                for col in range(1, max_col + 1):
+                for col in range(1, max_col):
                     chart.add_series({
                         'name':       [bus_list[i], 0, col],
                         'categories': [bus_list[i], 1, 0,   max_row, 0],
                         'values':     [bus_list[i], 1, col, max_row, col],
                         'line':       {'color': line_color[col - 1]}
                     })
-                if language == "English":
+                if language:
                     chart.set_x_axis({'name': 'Date', 'name_font' : {'size' : 9}, 'num_font' : {'arial narrow' : True}})
-                elif language == "Spanish":
+                else:
                     chart.set_x_axis({'name': 'Fecha', 'name_font' : {'size' : 9}, 'num_font' : {'arial narrow' : True}})
                 chart.set_y_axis({'min': 0, 'name': 'CMg [USD/MWh]', 'major_gridlines': {'visible': True}, 'name_font' : {'size' : 9}, 'num_font' : {'arial narrow' : True}})
                 chart.set_legend({'position': 'bottom', 'font': {'size': 9, 'Arial Narrow': True}})
@@ -96,16 +96,16 @@ def export_excel(bus_list, data, data_aux1, data_aux2, type_flag, file_root, fil
                 (max_row, max_col) = data_out.shape
                 chart = writer.book.add_chart({'type':'line'})
                 line_color = ["green","blue","red"]
-                for col in range(1, max_col + 1):
+                for col in range(1, max_col):
                     chart.add_series({
                         'name':       [bus_list[i], 0, col],
                         'categories': [bus_list[i], 1, 0,   max_row, 0],
                         'values':     [bus_list[i], 1, col, max_row, col],
                         'line':       {'color': line_color[col - 1]}
                     })
-                if language == "English":
+                if language:
                     chart.set_x_axis({'name': 'Date', 'name_font' : {'size' : 9}, 'num_font' : {'arial narrow' : True}})
-                elif language == "Spanish":
+                else:
                     chart.set_x_axis({'name': 'Fecha', 'name_font' : {'size' : 9}, 'num_font' : {'arial narrow' : True}})
                 chart.set_y_axis({'min': 0, 'name': 'CMg [USD/MWh]', 'major_gridlines': {'visible': True}, 'name_font' : {'size' : 9}, 'num_font' : {'arial narrow' : True}})
                 chart.set_legend({'position': 'bottom', 'font': {'size': 9, 'Arial Narrow': True}})
@@ -166,60 +166,60 @@ def init_date(file):
 
 def plot_hydro_cmg(wet_data,mid_data,dry_data,node, language):
     
-    if language == "English":
-        df_out = pd.DataFrame(index = dry_data.index, columns = [ "Wet", "Medium", "Dry"])
-    elif language == "Spanish":
-        df_out = pd.DataFrame(index = dry_data.index, columns = [ "Húmedo", "Medio", "Seco"])
     if node not in dry_data.columns:
         print("Error: Node doesn't exist, please check node name")
         return None
     else:
-        if language == "English":
+        if language:
+            df_out = pd.DataFrame(index = dry_data.index, columns = [ "Wet", "Medium", "Dry","Average"])
             df_out["Dry"] = dry_data[node]
             df_out["Medium"] = mid_data[node]
             df_out["Wet"] = wet_data[node]
-        elif language == "Spanish":
+            df_out["Average"] = (3*dry_data[node] + 25*mid_data[node] + 3*wet_data[node])/31
+        else:
+            df_out = pd.DataFrame(index = dry_data.index, columns = [ "Húmedo", "Medio", "Seco","Promedio"])
             df_out["Seco"] = dry_data[node]
             df_out["Medio"] = mid_data[node]
             df_out["Húmedo"] = wet_data[node]
+            df_out["Promedio"] = (3*dry_data[node] + 25*mid_data[node] + 3*wet_data[node])/31
 
         df_out = df_out.reset_index()
         df_out["Month"] = df_out["Month"].astype("str") + "-" + df_out["Year"].astype("str")
         df_out = df_out.drop(columns = ["Year"])
-        if language == "English":
+        if language:
             df_out = df_out.rename(columns = {"Month":"Date"})
             df_out = df_out.set_index("Date")
-        elif language == "Spanish":
+        else:
             df_out = df_out.rename(columns = {"Month":"Fecha"})
             df_out = df_out.set_index("Fecha")
     return df_out
 
 def wind_cmg(HW_data,MW_data,LW_data,node, language):
 
-    if language == "English":
-        df_out = pd.DataFrame(index = HW_data.index, columns = [ "High Wind", "Medium Wind", "Low Wind"])
-    elif language == "Spanish":
-        df_out = pd.DataFrame(index = HW_data.index, columns = [ "Viento Alto", "Viento Medio", "Viento Bajo"])
     if node not in HW_data.columns:
         print("Error: Node doesn't exist, please check node name")
         return None
     else:
-        if language == "English":
+        if language:
+            df_out = pd.DataFrame(index = HW_data.index, columns = [ "High Wind", "Medium Wind", "Low Wind","Average"])
             df_out["High Wind"] = HW_data[node]
             df_out["Medium Wind"] = MW_data[node]
             df_out["Low Wind"] = LW_data[node]
-        if language == "Spanish":
+            df_out["Average"] = (3*HW_data[node] + 25*MW_data[node] + 3*LW_data[node])/31
+        else:
+            df_out = pd.DataFrame(index = HW_data.index, columns = [ "Viento Alto", "Viento Medio", "Viento Bajo","Promedio"])
             df_out["Viento Alto"] = HW_data[node]
             df_out["Viento Medio"] = MW_data[node]
             df_out["Viento Bajo"] = LW_data[node]
+            df_out["Promedio"] = (3*HW_data[node] + 25*MW_data[node] + 3*LW_data[node])/31
 
         df_out = df_out.reset_index()
         df_out["Month"] = df_out["Month"].astype("str") + "-" + df_out["Year"].astype("str")
         df_out = df_out.drop(columns = ["Year"])
-        if language == "English":
+        if language:
             df_out = df_out.rename(columns = {"Month":"Date"})
             df_out = df_out.set_index("Date")
-        elif language == "Spanish":
+        else:
             df_out = df_out.rename(columns = {"Month":"Fecha"})
             df_out = df_out.set_index("Fecha")
     return df_out
@@ -372,14 +372,14 @@ def plot_CMg_3d(data,bus,language,cmg_lim, file_root):
 
     ylabel_ticks = [i for i in range(year_period[0],year_period[1] + 1, 6)]
 
-    if language == "Spanish":
-        ax.set(xlim=(1, 24), ylim=(year_period[0],year_period[1]), zlim=(0, cmg_lim),
-        xlabel='Horas', ylabel='Años', zlabel='USD/MWh',
-            xticks = xlabel_ticks, yticks = bus_selected.index.values)
-    else:
+    if language:
         ax.set(xlim=(1, 24), ylim=(year_period[0],year_period[1]), zlim=(0, cmg_lim),
         xlabel='Hours', ylabel='Years', zlabel='USD/MWh',
             xticks = xlabel_ticks, yticks = ylabel_ticks)
+    else:
+        ax.set(xlim=(1, 24), ylim=(year_period[0],year_period[1]), zlim=(0, cmg_lim),
+        xlabel='Horas', ylabel='Años', zlabel='USD/MWh',
+            xticks = xlabel_ticks, yticks = bus_selected.index.values)
     
     ax.set_aspect('auto')
 
@@ -409,14 +409,14 @@ def weighted_mean(data, time, Serie_flag):
 
 def plot_year_month_data( data_month, bus, language):
 
-    if language == "English":
+    if language:
         df_out = pd.DataFrame(0, index = data_month.index, columns = ["Month Average Spot Price", "Year Average Spot Price"])
         df_out["Month Average Spot Price"] = data_month[bus]
         data_year = data_month[bus].groupby(level = [0]).mean()
         for index, row in df_out.iterrows():
             df_out.loc[index,"Year Average Spot Price"] = data_year[index[0]]
 
-    elif language == "Spanish":
+    else:
         df_out = pd.DataFrame(0, index = data_month.index, columns = ["Promedio Mensual Costo marginal", "Promedio Anual Costo marginal"])
         df_out["Promedio Mensual Costo marginal"] = data_month[bus]
         data_year = data_month[bus].groupby(level = [0]).mean()
@@ -426,10 +426,10 @@ def plot_year_month_data( data_month, bus, language):
     df_out = df_out.reset_index()
     df_out["Month"] = df_out["Month"].astype("str") + "-" + df_out["Year"].astype("str")
     df_out = df_out.drop(columns = ["Year"])
-    if language == "English":
+    if language:
         df_out = df_out.rename(columns = {"Month":"Date"})
         df_out = df_out.set_index("Date")
-    elif language == "Spanish":
+    else:
         df_out = df_out.rename(columns = {"Month":"Fecha"})
         df_out = df_out.set_index("Fecha")
 
@@ -483,12 +483,12 @@ def hydro_cmg(data, out_index, hydro_condition, hydro_limit, short_term_flag, fi
         for index, row in CMG_wet_hydrology.iterrows():
             
             if index < first_date:
-                CMG_dry_hydrology.loc[index,:] = data.loc[(index[0],index[1]),:].loc[(hydro_condition.loc[(index[0],index[1]),:][hydro_condition.loc[(index[0],index[1]),:] >= first_series[1]].index) & (hydro_condition.loc[(index[0],index[1]),:][hydro_condition.loc[(index[0],index[1]),:] <= first_series[1]].index),:].mean()
+                CMG_dry_hydrology.loc[index,:] = data.loc[(index[0],index[1]),:].loc[(hydro_condition.loc[(index[0],index[1]),:][hydro_condition.loc[(index[0],index[1]),:] >= first_series[0]].index) & (hydro_condition.loc[(index[0],index[1]),:][hydro_condition.loc[(index[0],index[1]),:] <= first_series[1]].index),:].mean()
                 CMG_wet_hydrology.loc[index,:] = CMG_dry_hydrology.loc[index,:]
                 CMG_mid_hydrology.loc[index,:] = CMG_dry_hydrology.loc[index,:]
 
             elif index >= first_date and index <= second_date:
-                CMG_dry_hydrology.loc[index,:] = data.loc[(index[0],index[1]),:].loc[(hydro_condition.loc[(index[0],index[1]),:][hydro_condition.loc[(index[0],index[1]),:] >= second_series[1]].index) & (hydro_condition.loc[(index[0],index[1]),:][hydro_condition.loc[(index[0],index[1]),:] <= second_series[1]].index),:].mean()
+                CMG_dry_hydrology.loc[index,:] = data.loc[(index[0],index[1]),:].loc[(hydro_condition.loc[(index[0],index[1]),:][hydro_condition.loc[(index[0],index[1]),:] >= second_series[0]].index) & (hydro_condition.loc[(index[0],index[1]),:][hydro_condition.loc[(index[0],index[1]),:] <= second_series[1]].index),:].mean()
 
                 CMG_wet_hydrology.loc[index,:] = CMG_dry_hydrology.loc[index,:]
 
@@ -526,16 +526,15 @@ def wind_out_data(data, hydro_condition, ST_flag, ST_date1, ST_serie1, ST_date2,
     cmgbus_LW = data[data.index.get_level_values("Seq.").isin(LW)].groupby(level = [0,1]).mean()                                              # Stage-Block Low-wind CMg
 
     if ST_flag:
-
         for index, row in cmgbus_HW.iterrows():
             if index < ST_date1:
-                cmgbus_HW.loc[index,:] = data.loc[(index[0],index[1]),:].loc[(i for i in hydro_condition.loc[(index[0],index[1]),:][hydro_condition.loc[(index[0],index[1]),:] >= ST_serie1].index if i in HW),:].mean()
-                cmgbus_MW.loc[index,:] = data.loc[(index[0],index[1]),:].loc[(i for i in hydro_condition.loc[(index[0],index[1]),:][hydro_condition.loc[(index[0],index[1]),:] >= ST_serie1].index if i in MW),:].mean()
-                cmgbus_LW.loc[index,:] = data.loc[(index[0],index[1]),:].loc[(i for i in hydro_condition.loc[(index[0],index[1]),:][hydro_condition.loc[(index[0],index[1]),:] >= ST_serie1].index if i in LW),:].mean()
-            if index >= ST_date1 and index < ST_date2:
-                cmgbus_HW.loc[index,:] = data.loc[(index[0],index[1]),:].loc[(i for i in hydro_condition.loc[(index[0],index[1]),:][hydro_condition.loc[(index[0],index[1]),:] >= ST_serie1].index if i in HW),:].mean()
-                cmgbus_MW.loc[index,:] = data.loc[(index[0],index[1]),:].loc[(i for i in hydro_condition.loc[(index[0],index[1]),:][hydro_condition.loc[(index[0],index[1]),:] >= ST_serie2].index if i in MW),:].mean()
-                cmgbus_LW.loc[index,:] = data.loc[(index[0],index[1]),:].loc[(i for i in hydro_condition.loc[(index[0],index[1]),:][hydro_condition.loc[(index[0],index[1]),:] >= ST_serie2].index if i in LW),:].mean()
+                cmgbus_HW.loc[index,:] = data.loc[index,:].loc[(i for i in hydro_condition.loc[index,:][hydro_condition.loc[index,:] >= ST_serie1[0]].index.intersection(hydro_condition.loc[index,:][hydro_condition.loc[index,:] <= ST_serie1[1]].index) if i in HW),:].mean()
+                cmgbus_MW.loc[index,:] = data.loc[index,:].loc[(i for i in hydro_condition.loc[index,:][hydro_condition.loc[index,:] >= ST_serie1[0]].index.intersection(hydro_condition.loc[index,:][hydro_condition.loc[index,:] <= ST_serie1[1]].index) if i in MW),:].mean()
+                cmgbus_LW.loc[index,:] = data.loc[index,:].loc[(i for i in hydro_condition.loc[index,:][hydro_condition.loc[index,:] >= ST_serie1[0]].index.intersection(hydro_condition.loc[index,:][hydro_condition.loc[index,:] <= ST_serie1[1]].index) if i in LW),:].mean()
+            elif index >= ST_date1 and index <= ST_date2:
+                cmgbus_HW.loc[index,:] = data.loc[index,:].loc[(i for i in hydro_condition.loc[index,:][hydro_condition.loc[index,:] >= ST_serie2[0]].index.intersection(hydro_condition.loc[index,:][hydro_condition.loc[index,:] <= ST_serie2[1]].index) if i in HW),:].mean()
+                cmgbus_MW.loc[index,:] = data.loc[index,:].loc[(i for i in hydro_condition.loc[index,:][hydro_condition.loc[index,:] >= ST_serie2[0]].index.intersection(hydro_condition.loc[index,:][hydro_condition.loc[index,:] <= ST_serie2[1]].index) if i in MW),:].mean()
+                cmgbus_LW.loc[index,:] = data.loc[index,:].loc[(i for i in hydro_condition.loc[index,:][hydro_condition.loc[index,:] >= ST_serie2[0]].index.intersection(hydro_condition.loc[index,:][hydro_condition.loc[index,:] <= ST_serie2[1]].index) if i in LW),:].mean()
             else:
                 break
     
@@ -549,17 +548,21 @@ def wind_out_data(data, hydro_condition, ST_flag, ST_date1, ST_serie1, ST_date2,
 ### Short term conditions
 
 start_date_output = (2022,6)                                                                                # Start date for output data
-ST_flag = False
+ST_flag = True
 short_term_hydro_cond = [26,31]                                                                             # Hydro condition for the shorttest time
 short_term_date = (2023,4)                                                                                  # Short term hydro date
 short_mid_term_hydro_cond = [26,31]                                                                         # hydro condition for the short time
 short_mid_term_date = (2024,4)                                                                              # Short-mid term hydro date
+English = True
 
 
 Hydro_limit_condition = [3,29]                                                                              # 3rd hydro as the wettest limit, 29th as the driest limit
 init_hydro_date = 1988
 last_hydro_date = 2018
 file_root = "C:/Users/Seba Morales/OneDrive - Synex Ingenieros Consultores Ltda/Casos2022/PlanDeObras/"
+
+typical_buses = ["PAzucar220","Crucero220", "Polpaico220","Cardones220","Charrua220","PMontt220"]           # Typical SEN buses
+# typical_buses = cmgbus.columns.values                                                                           # All Sen buses
 
 ## Read data
 
@@ -574,13 +577,11 @@ duraci["Total_month"] = 0
 for index,row in duraci.iterrows():
     duraci.loc[index, "Total_month"] = duraci.loc[(index[0],index[1],index[2]),"SEN"].sum()
 
-
 hidroseq = readfile("Orden_hidrologias.xlsx", 0, [])                                                        # read hydro seq file
 hidroseq = hidroseq[(hidroseq["Year"] >= init_hydro_date) & (hidroseq["Year"] <= last_hydro_date)]          # take just hydro sequence used
 hidroseq = hidroseq.sort_values(by = "Total", ascending = False)                                            # sort hydrologies frow wet to dry
 hidroseq["index"] = [i for i in range(1,32)]                                                                # index values by preview order
 hidroseq = hidroseq.set_index("index")                                                                      # Index it's setted
-
 
 cmgbus = month_year_index(cmgbus, date, start_date_output)                                                  # cmgbus data with year-month values
 cmgbus_stage_block_mean = cmgbus.groupby(level = [0,1,3]).mean()                                            # Data with year-month-block mean
@@ -619,16 +620,12 @@ CMgbus_WD, CMgbus_NWD, CMgbus_Mean, CMg_WD_y, CMg_NWD_y, CMg_Mean_y = daily_form
 
 ### output files
 
-typical_buses = ["PAzucar220","Crucero220", "Polpaico220","Cardones220","Charrua220","PMontt220"]           # Typical SEN buses
+export_excel(typical_buses, cmgbus_month, None, None, 0, file_root,"CMg_month.xlsx", English)             # Export excel with month-year CMg values
 
-SEN_buses = cmgbus.columns.values                                                                           # All Sen buses
+export_excel(typical_buses, CMg_Mean_y, None, None, 1, file_root,"CMg_Hour.xlsx", English)                # Export excel with hour-year CMg values
 
-export_excel(typical_buses, cmgbus_month, None, None, 0, file_root,"CMg_month.xlsx", "English")             # Export excel with month-year CMg values
+export_excel(typical_buses, wet_cmgbus, mid_cmgbus, dry_cmgbus, 2, file_root,"CMg_hydro.xlsx", English)   # Export excel with hydro condition CMg values
 
-export_excel(typical_buses, CMg_Mean_y, None, None, 1, file_root,"CMg_Hour.xlsx", "English")                # Export excel with hour-year CMg values
+export_excel(typical_buses, cmgbus_HW, cmgbus_MW, cmgbus_LW, 3, file_root,"CMg_wind.xlsx", English)       # Export excel with wind condition CMg values
 
-export_excel(typical_buses, wet_cmgbus, mid_cmgbus, dry_cmgbus, 2, file_root,"CMg_hydro.xlsx", "Spanish")   # Export excel with hydro condition CMg values
-
-export_excel(typical_buses, cmgbus_HW, cmgbus_MW, cmgbus_LW, 3, file_root,"CMg_wind.xlsx", "Spanish")       # Export excel with wind condition CMg values
-
-export_excel(typical_buses, CMgbus_Mean, None, None, 4, file_root,"CMg_Month_Hour.xlsx", "Spanish")         # Export excel with hour-year CMg values
+export_excel(typical_buses, CMgbus_Mean, None, None, 4, file_root,"CMg_Month_Hour.xlsx", English)         # Export excel with hour-year CMg values
