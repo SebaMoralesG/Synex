@@ -224,12 +224,16 @@ def export_excel(sheet_list, type_flag, file_root, filename, language,*args):
             elif type_flag[i] == 1:            # Generation works plan
                 args[i].to_excel(writer, sheet_name = sheet_list[i])
                 synex_style(args[i], writer.book, writer.sheets[sheet_list[i]], True, language)
-                xlsx_chart({'type':'column', "subtype":"stacked"},["orange","red","black","gray","brown","green","lime","blue","purple","yellow","cyan","magenta"],writer.book,sheet_list[i],writer.sheets,args[i].shape,language)
+                xlsx_chart({'type':'column', "subtype":"stacked"},
+                    ["orange","red","black","gray","brown","green","lime","blue","purple","yellow","cyan","magenta"],
+                    writer.book,sheet_list[i],writer.sheets,args[i].shape,language,type_flag)
 
             elif type_flag[i] == 2:
                 args[i].to_excel(writer, sheet_name = sheet_list[i])
                 synex_style(args[i], writer.book, writer.sheets[sheet_list[i]], True, language)
-                xlsx_chart({'type':'column', "subtype":"stacked"},["orange","red","black","gray","brown","green","lime","blue","purple","yellow","cyan","magenta"],writer.book,sheet_list[i],writer.sheets,args[i].shape,language)
+                xlsx_chart({'type':'column', "subtype":"stacked"},
+                    ["orange","red","black","gray","brown","green","lime","blue","purple","yellow","cyan","magenta"],
+                        writer.book,sheet_list[i],writer.sheets,args[i].shape,language,type_flag)
 
 
             printProgressBar(i+1, len(sheet_list), prefix = sheet_list[i], suffix = 'Complete', length = 50)           # 'Progress:'
@@ -241,9 +245,9 @@ def work_plan_loader(mtermise, mgndse, mhidrose, mod_ter, mod_hid, mod_gn, dicti
     mhidrose = mhidrose.loc[mhidrose["Data"] >= start_date,:]
     mgndse = mgndse.loc[mgndse["Data"] >= start_date,:]
 
-    mtermise["Substation"] = "-"
-    mtermise["Developer"] = "-"
-    mtermise["Technology"] = "-"
+    mtermise.loc[:,"Substation"] = "-"
+    mtermise.loc[:,"Developer"] = "-"
+    mtermise.loc[:,"Technology"] = "-"
     for index, row in mtermise.iterrows():
         mtermise.loc[index,"Substation"] = dictionary.loc[dictionary["SDDP"] == row["Name"],"Barra"].all()
         mtermise.loc[index,"Developer"] = dictionary.loc[dictionary["SDDP"] == row["Name"],"Desarrollador"].all()
@@ -256,9 +260,9 @@ def work_plan_loader(mtermise, mgndse, mhidrose, mod_ter, mod_hid, mod_gn, dicti
         mtermise.loc[index,"Pot"] -= mod_ter.loc[mod_ter.index[mod_ter.index.get_loc(row["Data"]) - 1],row["Name"]]
         
     
-    mhidrose["Substation"] = "-"
-    mhidrose["Developer"] = "-"
-    mhidrose["Technology"] = "-"
+    mhidrose.loc[:,"Substation"] = "-"
+    mhidrose.loc[:,"Developer"] = "-"
+    mhidrose.loc[:,"Technology"] = "-"
     for index, row in mhidrose.iterrows():
         if row["Name"][:3] == "HIB":
             if language:
@@ -277,9 +281,9 @@ def work_plan_loader(mtermise, mgndse, mhidrose, mod_ter, mod_hid, mod_gn, dicti
         mhidrose.loc[index,"Pot"] -= mod_hid.loc[mod_hid.index[mod_hid.index.get_loc(row["Data"]) - 1],row["Name"]]
         
     
-    mgndse["Substation"] = "-"
-    mgndse["Developer"] = "-"
-    mgndse["Technology"] = "-"
+    mgndse.loc[:,"Substation"] = "-"
+    mgndse.loc[:,"Developer"] = "-"
+    mgndse.loc[:,"Technology"] = "-"
     for index, row in mgndse.iterrows():
         if row["Name"][:3] == "HIB":
             if language:
@@ -332,28 +336,56 @@ def work_plan_loader(mtermise, mgndse, mhidrose, mod_ter, mod_hid, mod_gn, dicti
     work_plan = work_plan.sort_values(by = "Data")
     work_plan = work_plan.rename(columns = {"Name":"Project","Data":"COD","Pot":"MW"})
     work_plan = work_plan.iloc[:,[1,0,5,3,4,2]]
+    work_plan = work_plan.groupby(["COD","Project","Technology","Substation","Developer"], as_index = False).sum()
     return work_plan
 
-def xlsx_chart(chart_type, chart_colors,chart_book, sheet_name, chart_sheet,chart_size, language):
+def xlsx_chart(chart_type, chart_colors,chart_book, sheet_name, chart_sheet,chart_size, language,type_flag):
     chart = chart_book.add_chart(chart_type)
     for col in range(1, chart_size[1]):
         chart.add_series({
             'name':       [sheet_name, 0, col],
             'categories': [sheet_name, 1, 0,   chart_size[0], 0],
             'values':     [sheet_name, 1, col, chart_size[0], col],
-            'fill':       {'color': chart_colors[col - 1],
-            'line':       {'color': chart_colors[col - 1]}}
+            'fill':       {'color': chart_colors[col - 1]},
+            'line':       {'color': chart_colors[col - 1]},
+            'gap':        50
         })
 
     if language:
         chart.set_x_axis({'name': 'Date', 'name_font' : {'size' : 9}, 'num_font' : {'arial narrow' : True}})
-        chart.set_y_axis({'name': 'Capacity [MW]', 'major_gridlines': {'visible': True}, 'name_font' : {'size' : 9}, 'num_font' : {'arial narrow' : True},'num_format':'#,##0'})
+        if type_flag == 2:
+            chart.set_y_axis({'name': 'Capacity [MW]', 'major_gridlines': {'visible': True}, 'name_font' : {'size' : 9},
+                        'num_font' : {'arial narrow' : True},'num_format':'#,##0','min':0})
+        else:
+            chart.set_y_axis({'name': 'Capacity [MW]', 'major_gridlines': {'visible': True}, 'name_font' : {'size' : 9},
+                        'num_font' : {'arial narrow' : True},'num_format':'#,##0'})
     else:
         chart.set_x_axis({'name': 'Fecha', 'name_font' : {'size' : 9}, 'num_font' : {'arial narrow' : True}})
-        chart.set_y_axis({'name': 'Capacidad [MW]', 'major_gridlines': {'visible': True}, 'name_font' : {'size' : 9}, 'num_font' : {'arial narrow' : True},'num_format':'#,##0'})
+        if type_flag == 2:
+            chart.set_y_axis({'name': 'Capacidad [MW]', 'major_gridlines': {'visible': True}, 'name_font' : {'size' : 9}, 
+                            'num_font' : {'arial narrow' : True},'num_format':'#,##0','min':0})
+        else:
+            chart.set_y_axis({'name': 'Capacidad [MW]', 'major_gridlines': {'visible': True}, 'name_font' : {'size' : 9}, 
+                            'num_font' : {'arial narrow' : True},'num_format':'#,##0'})
     chart.set_legend({'position': 'bottom', 'font': {'size': 9, 'Arial Narrow': True}})
     chart.set_size({'width': 700, 'height': 450})
     chart_sheet[sheet_name].insert_chart(1, 15, chart)
+
+def added_gen(w_plan, technologies):
+
+    add_gen = pd.DataFrame(w_plan)
+    add_gen.loc[:,"COD"] = add_gen.loc[:,"COD"].str[:4].astype('int')
+    add_gen = add_gen.loc[:,["COD","Technology","MW"]]
+    add_gen = add_gen.groupby(["COD","Technology"], as_index = False).sum()
+    add_gen = add_gen.pivot(index = "COD", columns = "Technology", values = "MW")
+    add_gen = add_gen.fillna(0)
+    for tec in technologies:
+        if tec not in add_gen.columns:
+            add_gen[tec] = 0
+    add_gen = add_gen.loc[:,technologies]
+    add_gen["Total"] = add_gen.sum(axis = 1)
+    return add_gen
+
 
 ####################################################################################################
 ########################################     MAIN CODE      ########################################
@@ -367,7 +399,7 @@ date = str(start_date)+"-01"
 technologies  = ["Biomass","Coal","Diesel","Gas","Geothermal","Hybrid Storage","Hybrid Solar PV","Hydro","Solar CSP","Solar PV","Wind Farm","Battery"]
 technologies_esp  = ["Biomasa","Carbón","Diesel","Gas","Geotérmica","Híbrido Almacenamiento","Híbrido Solar FV","Hidro","Solar CSP","Solar FV","Eólica","Batería"]
 
-file_root = "//JAIME/a Respaldo Casos Synex/Synex Base 03-2022/20_93_1513_09032022 - EBS LP - CMB - BASE comb Junio"
+file_root = "C:/aCasosSynex/20_93_1513_09032022 - EBS LP - CMB - BASE comb Junio"
 output_file_name = "/WorkPlan.xlsx"
 english = True
 
@@ -439,27 +471,13 @@ mod_gnd = data_expand(cgndse, mgndse, start_date)
 
 # Generation park Works Plan
 
-work_plan = work_plan_loader(mtermise, mgndse,mhidrose, mod_termi, mod_hidro, mod_gnd,dictionary,[],date)
-
-work_plan = work_plan.groupby(["COD","Project","Technology","Substation","Developer"], as_index = False).sum()
-print(work_plan)
+work_plan = work_plan_loader(mtermise, mgndse,mhidrose, mod_termi, mod_hidro, mod_gnd,dictionary,english,date)
 
 coal_power = -work_plan.loc[work_plan["Technology"] == "Coal","MW"].sum()
-
 init_capacity["Coal"] = coal_power
+print(work_plan)
 
-add_gen = work_plan
-add_gen.loc[:,"COD"] = add_gen.loc[:,"COD"].str[:4].astype('int')
-add_gen = add_gen.loc[:,["COD","Technology","MW"]]
-add_gen = add_gen.groupby(["COD","Technology"], as_index = False).sum()
-add_gen = add_gen.pivot(index = "COD", columns = "Technology", values = "MW")
-add_gen = add_gen.fillna(0)
-for tec in technologies:
-    if tec not in add_gen.columns:
-        add_gen[tec] = 0
-add_gen = add_gen.loc[:,technologies]
-add_gen["Total"] = add_gen.sum(axis = 1)
-
+add_gen = added_gen(work_plan, technologies)
 
 gen_expantion = pd.DataFrame(0,columns = technologies, index = [i for i in range(start_date-1,add_gen.index[-1] + 1)])
 for col in gen_expantion.columns:
@@ -473,9 +491,9 @@ for col in gen_expantion.columns:
                 gen_expantion.loc[index,col] = gen_expantion.loc[index - 1,col] + add_gen.loc[index,col]
 
 gen_expantion["Total"] = gen_expantion.sum(axis = 1)
-gen_expantion
+print(gen_expantion)
 
-### Generation added by year
+work_plan = work_plan_loader(mtermise, mgndse,mhidrose, mod_termi, mod_hidro, mod_gnd,dictionary,english,date)
 
 if not english:
         work_plan = work_plan.rename(columns = {"Project":"Proyecto"})
@@ -483,4 +501,4 @@ if not english:
 
 
 print(work_plan)
-# export_excel(["WorksPlan","AddedCap","GenCap"],[0,1,2], file_root, output_file_name, english, work_plan, add_gen, gen_expantion)
+export_excel(["WorksPlan","AddedCap","GenCap"],[0,1,2], file_root, output_file_name, english, work_plan, add_gen, gen_expantion)
