@@ -399,7 +399,7 @@ date = str(start_date)+"-01"
 technologies  = ["Biomass","Coal","Diesel","Gas","Geothermal","Hybrid Storage","Hybrid Solar PV","Hydro","Solar CSP","Solar PV","Wind Farm","Battery"]
 technologies_esp  = ["Biomasa","Carbón","Diesel","Gas","Geotérmica","Híbrido Almacenamiento","Híbrido Solar FV","Hidro","Solar CSP","Solar FV","Eólica","Batería"]
 
-file_root = "C:/aCasosSynex/20_93_1513_09032022 - EBS LP - CMB - BASE comb Junio"
+file_root = "C:/aCasosSynex/20_93_15113_26072022 - EBS - JINKO"
 output_file_name = "/WorkPlan.xlsx"
 english = True
 
