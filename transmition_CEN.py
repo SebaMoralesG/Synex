@@ -1,6 +1,7 @@
 import pandas as pd
 import requests
 import re
+from time import process_time
 
 
 def GET_API_SIP(url, token, date: str | None = None, offset = 0, limit = 20):
@@ -47,6 +48,18 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
     if iteration == total: 
         print()
 
+def exectime(file,flag,t0):
+    if flag:
+        print("______________________________________________")
+        print("Processing File ", file)
+        t0 = process_time()
+        return t0
+    else:
+        t1 = process_time()
+        print("Execution Time: ",t1-t0," sec.")
+        print("______________________________________________")
+        return 0
+
 
 ## CEN Buses
 
@@ -56,7 +69,7 @@ buses = buses.iloc[:,[0,4,5,6]]
 buses["Coord E"] = ""
 buses["Coord W"] = ""
 buses["Zone"] = ""
-
+t0 = exectime("Buses data",True,0)
 printProgressBar(0, buses.index[-1] + 1, prefix = 'Progress:', suffix = 'Complete', length = 50)
 for index, row in buses.iterrows():
     bus_id = buses.loc[index,"id"]
@@ -86,11 +99,15 @@ for index, row in buses.iterrows():
 buses.loc[:,"Coord E"] = buses.loc[:,"Coord E"].astype(float)
 buses.loc[:,"Coord W"] = buses.loc[:,"Coord W"].astype(float)
 buses.loc[:,"Zone"] = buses.loc[:,"Zone"].astype(int)
+t0 = exectime("Buses data",False,t0)
 
 ## Lines data
 print("Reading API-Infotecnica: Lines")
 lines = API_request("https://api-infotecnica.coordinador.cl/v1/secciones-tramos")
 lines = lines.iloc[:,[0,1,2,5,6,7,10,11]]
+lines["linea_nombre"] = lines["linea_nombre"].str.upper()
+lines["OrBus"] = ""
+lines["DesBus"] = ""
 lines["kV"] = 0
 lines["km"] = 0
 lines["R+"] = 0
@@ -98,12 +115,35 @@ lines["X+"] = 0
 lines["R0"] = 0
 lines["X0"] = 0
 
+t0 = exectime("Lines data",True,0)
 printProgressBar(0, lines.index[-1] + 1, prefix = 'Progress:', suffix = 'Complete', length = 50)
 for index, row in lines.iterrows():
     line_id = lines.loc[index,"id"]
     lines_data = API_request(f"https://api-infotecnica.coordinador.cl/v1/secciones-tramos/{line_id}/fichas-tecnicas/general")
     lines_data = lines_data.iloc[[7,8,9,13],[1,2,3,4,6,7]].T
     lines_data = lines_data.fillna("0")
+    if re.findall("\d+KV",lines.loc[index,"linea_nombre"]) == [] and re.findall("\d+\ KV",lines.loc[index,"linea_nombre"]) != []:
+        if "–" in lines.loc[index,"linea_nombre"].replace(re.findall("\d+\ KV",lines.loc[index,"linea_nombre"])[0],""):
+            lines.loc[index,"OrBus"] = lines.loc[index,"linea_nombre"].replace(re.findall("\d+\ KV",lines.loc[index,"linea_nombre"])[0],"").split("–",2)[0].strip()
+            lines.loc[index,"DesBus"] = lines.loc[index,"linea_nombre"].replace(re.findall("\d+\ KV",lines.loc[index,"linea_nombre"])[0],"").split("–",2)[1].strip()
+        else:
+            lines.loc[index,"OrBus"] = lines.loc[index,"linea_nombre"].replace(re.findall("\d+\ KV",lines.loc[index,"linea_nombre"])[0],"").split("-",2)[0].strip()
+            lines.loc[index,"DesBus"] = lines.loc[index,"linea_nombre"].replace(re.findall("\d+\ KV",lines.loc[index,"linea_nombre"])[0],"").split("-",2)[1].strip()
+    elif len(re.findall("\d+KV",lines.loc[index,"linea_nombre"])) == 1:
+        if "–" in lines.loc[index,"linea_nombre"].replace(re.findall("\d+KV",lines.loc[index,"linea_nombre"])[0],""):
+            lines.loc[index,"OrBus"] = lines.loc[index,"linea_nombre"].replace(re.findall("\d+KV",lines.loc[index,"linea_nombre"])[0],"").split("–",2)[0].strip()
+            lines.loc[index,"DesBus"] = lines.loc[index,"linea_nombre"].replace(re.findall("\d+KV",lines.loc[index,"linea_nombre"])[0],"").split("–",2)[1].strip()
+        else:
+            lines.loc[index,"OrBus"] = lines.loc[index,"linea_nombre"].replace(re.findall("\d+KV",lines.loc[index,"linea_nombre"])[0],"").split("-",2)[0].strip()
+            lines.loc[index,"DesBus"] = lines.loc[index,"linea_nombre"].replace(re.findall("\d+KV",lines.loc[index,"linea_nombre"])[0],"").split("-",2)[1].strip()
+    else:
+        if "–" in lines.loc[index,"linea_nombre"]:
+            lines.loc[index,"OrBus"] = lines.loc[index,"linea_nombre"].split("–",2)[0].strip()
+            lines.loc[index,"DesBus"] = lines.loc[index,"linea_nombre"].split("–",2)[1].strip()
+        else:
+            lines.loc[index,"OrBus"] = lines.loc[index,"linea_nombre"].split("-",2)[0].strip()
+            lines.loc[index,"DesBus"] = lines.loc[index,"linea_nombre"].split("-",2)[1].strip()
+
     for element in lines_data.index:
         if lines_data.loc[element,"valor_texto"] == True:
             lines_data.loc[element,"valor_texto"] = "1"
@@ -125,6 +165,8 @@ for index, row in lines.iterrows():
     lines.loc[index,"R0"] =lines_data.iloc[4,2]
     lines.loc[index,"X0"] =lines_data.iloc[5,2]
     printProgressBar(index + 1, lines.index[-1] + 1, prefix = 'Progress:', suffix = 'Complete', length = 50)
+
+t0 = exectime("Buses data",False,t0)
 
 print("exporting file...")
 with pd.ExcelWriter("transmition_CEN.xlsx", engine = 'xlsxwriter') as writer:
