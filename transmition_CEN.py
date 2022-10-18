@@ -48,8 +48,47 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
         print()
 
 
-# buses = API_request("https://api-infotecnica.coordinador.cl/v1/subestaciones")
+## CEN Buses
 
+print("Reading API-Infotecnica: Buses")
+buses = API_request("https://api-infotecnica.coordinador.cl/v1/subestaciones")
+buses = buses.iloc[:,[0,4,5,6]]
+buses["Coord E"] = ""
+buses["Coord W"] = ""
+buses["Zone"] = ""
+
+printProgressBar(0, buses.index[-1] + 1, prefix = 'Progress:', suffix = 'Complete', length = 50)
+for index, row in buses.iterrows():
+    bus_id = buses.loc[index,"id"]
+    buses_data = API_request(f"https://api-infotecnica.coordinador.cl/v1/subestaciones/{bus_id}/fichas-tecnicas/general")
+    buses_data = buses_data.iloc[[7,9],[1,2,3,16,17,18,19]].T
+
+    if buses_data.iloc[6,1] == None or re.findall("\d+", buses_data.iloc[6,1]) == []:
+        buses_data.iloc[6,1] = "19"
+    else:
+        buses_data.iloc[6,1] = re.findall("\d+", buses_data.iloc[6,1])[0]
+
+    if buses_data.iloc[4,1] == "" or buses_data.iloc[4,1] == None or re.findall("\d+\.\d+",buses_data.iloc[4,1].replace(",",".")) == []:
+        buses_data.iloc[4,1] = "0"
+    else:
+        buses_data.iloc[4,1] = re.findall("\d+\.\d+",buses_data.iloc[4,1].replace(",","."))[0]
+
+    if buses_data.iloc[5,1] == "" or buses_data.iloc[5,1] == None or re.findall("\d+\.\d+",buses_data.iloc[5,1].replace(",",".")) == []:
+        buses_data.iloc[5,1] = "0"
+    else:
+        buses_data.iloc[5,1] = re.findall("\d+\.\d+",buses_data.iloc[5,1].replace(",","."))[0]
+
+    buses.loc[index, "Coord E"] = buses_data.iloc[4,1]
+    buses.loc[index, "Coord W"] = buses_data.iloc[5,1]
+    buses.loc[index, "Zone"] = buses_data.iloc[6,1]
+    printProgressBar(index + 1, buses.index[-1] + 1, prefix = 'Progress:', suffix = 'Complete', length = 50)
+
+buses.loc[:,"Coord E"] = buses.loc[:,"Coord E"].astype(float)
+buses.loc[:,"Coord W"] = buses.loc[:,"Coord W"].astype(float)
+buses.loc[:,"Zone"] = buses.loc[:,"Zone"].astype(int)
+
+## Lines data
+print("Reading API-Infotecnica: Lines")
 lines = API_request("https://api-infotecnica.coordinador.cl/v1/secciones-tramos")
 lines = lines.iloc[:,[0,1,2,5,6,7,10,11]]
 lines["kV"] = 0
@@ -61,7 +100,6 @@ lines["X0"] = 0
 
 printProgressBar(0, lines.index[-1] + 1, prefix = 'Progress:', suffix = 'Complete', length = 50)
 for index, row in lines.iterrows():
-    line_id = lines.loc[0,"id"]
     line_id = lines.loc[index,"id"]
     lines_data = API_request(f"https://api-infotecnica.coordinador.cl/v1/secciones-tramos/{line_id}/fichas-tecnicas/general")
     lines_data = lines_data.iloc[[7,8,9,13],[1,2,3,4,6,7]].T
@@ -78,8 +116,7 @@ for index, row in lines.iterrows():
         else:
             lines_data.loc[element,"valor_texto"] = lines_data.loc[element,"valor_texto"].replace(",",".")
             if not lines_data.loc[element,"valor_texto"].isnumeric():
-                print(re.findall('\d+.\d+',lines_data.loc[element,"valor_texto"]), lines_data.loc[element,"valor_texto"])
-                lines_data.loc[element,"valor_texto"] = re.findall('\d+.\d+',lines_data.loc[element,"valor_texto"])[0]
+                lines_data.loc[element,"valor_texto"] = re.findall('\d+\.\d+',lines_data.loc[element,"valor_texto"])[0]
     lines_data.iloc[:,2] = lines_data.iloc[:,2].astype(float)
     lines.loc[index,"kV"] = lines_data.iloc[0,2]
     lines.loc[index,"km"] = lines_data.iloc[1,2]
@@ -92,5 +129,5 @@ for index, row in lines.iterrows():
 print("exporting file...")
 with pd.ExcelWriter("transmition_CEN.xlsx", engine = 'xlsxwriter') as writer:
     lines.to_excel(writer, sheet_name = "Transmition")
+    buses.to_excel(writer, sheet_name = "Buses")
     print("File CEN transmition lines exported to: main root.")
-
