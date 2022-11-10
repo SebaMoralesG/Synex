@@ -3,7 +3,6 @@ import requests
 import re
 from time import process_time
 import math
-from sklearn.cluster import KMeans
 
 
 def GET_API_SIP(url, token, date: str | None = None, offset = 0, limit = 20):
