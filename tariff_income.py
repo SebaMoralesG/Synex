@@ -50,23 +50,6 @@ def exectime(text,flag,t0):
         print("______________________________________________")
         return None
 
-def lines_incomes(losses, bus_df, circ_df,cmg_df, cirf_df):
-    t0 = exectime("lines incomes",True, 0)
-    losses_valued = pd.DataFrame(0, columns = losses.columns, index = losses.index)
-    flow_valued = pd.DataFrame(0, columns = losses.columns, index = losses.index)
-    printProgressBar(0, len(losses.columns), prefix = 'Progress:', suffix = 'Complete', length = 50)
-    for i in range(len(losses.columns)):
-        col = losses.columns[i]
-        BOR = bus_df.loc[bus_df["!Code"] == circ_df.loc[circ_df["Name"] == col,"BOR"].values[0],"Name"]
-        BDE = bus_df.loc[bus_df["!Code"] == circ_df.loc[circ_df["Name"] == col,"BDE"].values[0],"Name"]
-        losses_valued.loc[cirf_df.loc[cirf_df[col] <= 0,col].index,col] = cmg_df.loc[cirf_df.loc[cirf_df[col] <= 0,col].index,BOR].values
-        losses_valued.loc[cirf_df.loc[cirf_df[col] > 0,col].index,col] = cmg_df.loc[cirf_df.loc[cirf_df[col] > 0,col].index,BDE].values
-        flow_valued.loc[:, col] = cmg_df.loc[:,BDE].values - cmg_df.loc[:,BOR].values
-        printProgressBar(i+1, len(losses.columns), prefix = 'Progress:', suffix = 'Complete', length = 50)
-        losses_valued = losses_valued.mul(losses)/1000
-    t0 = exectime("lines incomes",False, t0)
-    return losses_valued, flow_valued
-
 def gen_bus_adder(dbus, column_names, df_index, *args):
     df = pd.DataFrame(0,columns = column_names, index = df_index)
     for data in args:
