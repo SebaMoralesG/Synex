@@ -118,7 +118,7 @@ def case_hydro_condition(init_hydro_date, last_hydro_date, data_index, hydro_seq
             hydro_condition.loc[r,c] = hydro_seq[hydro_seq["Year"] == hydro_condition.loc[r,c]].index[0]
     return hydro_condition
 
-def export_excel(sheet_list, type_flag, file_root, filename, language,*args):
+def export_excel(sheet_list, type_flag, file_root, filename, language,colors,*args):
 
     t0 = exectime("Exporting data to: " + filename, True, 0)
     printProgressBar(0, len(sheet_list), prefix = 'Progress:', suffix = 'Complete', length = 50)
@@ -132,15 +132,13 @@ def export_excel(sheet_list, type_flag, file_root, filename, language,*args):
             elif type_flag[i] == 1:            # Generation works plan
                 args[i].to_excel(writer, sheet_name = sheet_list[i])
                 synex_style(args[i], writer.book, writer.sheets[sheet_list[i]], True, language)
-                xlsx_chart({'type':'column', "subtype":"stacked"},
-                    ["orange","red","black","gray","brown","green","lime","blue","purple","yellow","cyan","magenta"],
+                xlsx_chart({'type':'column', "subtype":"stacked"}, colors,
                     writer.book,sheet_list[i],writer.sheets,args[i].shape,language,type_flag)
 
             elif type_flag[i] == 2:
                 args[i].to_excel(writer, sheet_name = sheet_list[i])
                 synex_style(args[i], writer.book, writer.sheets[sheet_list[i]], True, language)
-                xlsx_chart({'type':'area', "subtype":"stacked"},
-                    ["orange","red","black","gray","brown","silver","green","lime","blue","purple","yellow","cyan","magenta"],
+                xlsx_chart({'type':'area', "subtype":"stacked"}, colors,
                         writer.book,sheet_list[i],writer.sheets,args[i].shape,language,type_flag)
 
 
@@ -195,23 +193,23 @@ def xlsx_chart(chart_type, chart_colors,chart_book, sheet_name, chart_sheet,char
         })
 
     if language:
-        chart.set_x_axis({'num_font' : {'arial narrow' : True}})
+        chart.set_x_axis({'name': 'Date', 'name_font' : {'size' : 9}, 'num_font' : {'arial narrow' : True}})
         if type_flag == 2:
-            chart.set_y_axis({'major_gridlines': {'visible': True},
+            chart.set_y_axis({'name': 'Capacity [MW]', 'major_gridlines': {'visible': True}, 'name_font' : {'size' : 9},
                         'num_font' : {'arial narrow' : True},'num_format':'#,##0','min':0})
         else:
-            chart.set_y_axis({'major_gridlines': {'visible': True},
+            chart.set_y_axis({'name': 'Capacity [MW]', 'major_gridlines': {'visible': True}, 'name_font' : {'size' : 9},
                         'num_font' : {'arial narrow' : True},'num_format':'#,##0'})
     else:
-        chart.set_x_axis({'num_font' : {'arial narrow' : True}})
+        chart.set_x_axis({'name': 'Fecha', 'name_font' : {'size' : 9}, 'num_font' : {'arial narrow' : True}})
         if type_flag == 2:
-            chart.set_y_axis({'major_gridlines': {'visible': True},
+            chart.set_y_axis({'name': 'Capacidad [MW]', 'major_gridlines': {'visible': True}, 'name_font' : {'size' : 9}, 
                             'num_font' : {'arial narrow' : True},'num_format':'#,##0','min':0})
         else:
-            chart.set_y_axis({'major_gridlines': {'visible': True},
+            chart.set_y_axis({'name': 'Capacidad [MW]', 'major_gridlines': {'visible': True}, 'name_font' : {'size' : 9}, 
                             'num_font' : {'arial narrow' : True},'num_format':'#,##0'})
     chart.set_legend({'position': 'bottom', 'font': {'size': 9, 'Arial Narrow': True}})
-    chart.set_size({'width': 600, 'height': 350})
+    chart.set_size({'width': 700, 'height': 450})
     chart_sheet[sheet_name].insert_chart(1, 15, chart)
 
 
@@ -220,27 +218,53 @@ def xlsx_chart(chart_type, chart_colors,chart_book, sheet_name, chart_sheet,char
 file_root = input("Please add file path's: ",)
 output_file_name = "GenerationExpantion.xlsx"
 
-start_date_output = (2022,10)                                                                                # Start date for output data
-ST_flag = True
-short_term_hydro_cond = [29,31]                                                                             # Hydro condition for the shorttest time
+start_date_output = (2023,2)                                                                                # Start date for output data
+ST_flag = False
+short_term_hydro_cond = [28,28]                                                                             # Hydro condition for the shorttest time
 short_term_date = (2023,4)                                                                                  # Short term hydro date
-short_mid_term_hydro_cond = [29,31]                                                                         # hydro condition for the short time
-short_mid_term_date = (2024,4)                                                                              # Short-mid term hydro date
+short_mid_term_hydro_cond = [28,28]                                                                         # hydro condition for the short time
+short_mid_term_date = (2023,4)                                                                              # Short-mid term hydro date
 English = True
+
+previous_gen_flag = True
 
 Hydro_limit_condition = [3,29]                                                                              # 3rd hydro as the wettest limit, 29th as the driest limit
 init_hydro_date = 1988
 last_hydro_date = 2018
 
-technologies  = ["Biomass","Coal","Diesel","Gas","Geothermal","Fuel Oil","Hybrid Storage","Hybrid Solar PV","Hydro","Solar CSP","Solar PV","Wind Farm","Battery"]
-technologies_esp  = ["Biomasa","Carbón","Diesel","Gas","Geotérmica","Fuel Oil","Híbrido Almacenamiento","Híbrido Solar FV","Hidro","Solar CSP","Solar FV","Eólica","Batería"]
+HW = [i for i in range(1,94,3)]                                                                             # High - wind series
+MW = [i for i in range(2,94,3)]                                                                             # Middle - wind series
+LW = [i for i in range(3,94,3)]                                                                             # Low - wind series
+FW = [i for i in range(1,94)]
 
-## Actualizado a Sep22(considera sep)
+wind_cond = LW
+
+technologies  = ["Coal","Hydro","Gas","Solar PV","Wind Farm","Hybrid Storage","Hybrid Solar PV","Solar CSP","Battery","Biomass","Diesel","Geothermal","Fuel Oil"]
+technologies_esp  = ["Carbón","Hidro","Gas","Solar FV","Eólica","Híbrido Almacenamiento","Híbrido Solar FV","Solar CSP","Batería","Biomasa","Diesel","Geotérmica","Fuel Oil"]
+
+tech_colors = {"Biomass":"orange",
+            "Coal":"red",
+            "Diesel":"black",
+            "Gas":"gray",
+            "Geothermal":"brown",
+            "Hybrid Storage":"green",
+            "Hybrid Solar PV":"lime",
+            "Hydro":"blue",
+            "Solar CSP":"purple",
+            "Solar PV":"yellow",
+            "Wind Farm":"cyan",
+            "Battery":"magenta",
+            "Fuel Oil":"silver"}
+
+colors = [tech_colors[i] for i in technologies]
+
+
+## Actualizado a Ene23(considera Ene)
 
 previous_gen = readfile("CEN_RealGen.xlsx",3,[18,19])
 previous_gen = previous_gen.dropna()
 previous_gen = previous_gen.set_index("Technology")
-
+previous_gen
 
 #####     Read data
 print("Reading generations")
@@ -251,8 +275,9 @@ gergnd = gergnd.rename(columns= {col: col.replace(" ","") for col in gergnd.colu
 gerhid = gerhid.rename(columns= {col: col.replace(" ","") for col in gerhid.columns})
 gerter = gerter.rename(columns= {col: col.replace(" ","") for col in gerter.columns})
 
-dictionary = readfile(os.path.join(file_root, "Power_Plant_Dictionary.xlsx"),0,[])
+dictionary = readfile("Power_Plant_Dictionary.xlsx",0,[])
 dictionary = dictionary.fillna("-")
+dictionary
 
 date = init_date(os.path.join(file_root, "duraci.csv"))
 duraci = readfile(os.path.join(file_root,"duraci.csv"),3,[0,1,2,3])
@@ -280,23 +305,18 @@ gerhid = gerhid.groupby(level = ["Year","Month","Seq."]).sum()
 
 
 if ST_flag:
-    for index in duraci.index:
-        if index <= short_term_date:
-            gnd_con = gergnd.loc[(index[0],index[1],(i for i in hydro_condition.loc[(index[0],index[1]),:][hydro_condition.loc[(index[0],index[1]),:] >= short_term_hydro_cond[0]].index.intersection(hydro_condition.loc[(index[0],index[1]),:][hydro_condition.loc[(index[0],index[1]),:] <= short_term_hydro_cond[1]].index))),:].mean()
-            hid_con = gerhid.loc[(index[0],index[1],(i for i in hydro_condition.loc[(index[0],index[1]),:][hydro_condition.loc[(index[0],index[1]),:] >= short_term_hydro_cond[0]].index.intersection(hydro_condition.loc[(index[0],index[1]),:][hydro_condition.loc[(index[0],index[1]),:] <= short_term_hydro_cond[1]].index))),:].mean()
-            ter_con = gerter.loc[(index[0],index[1],(i for i in hydro_condition.loc[(index[0],index[1]),:][hydro_condition.loc[(index[0],index[1]),:] >= short_term_hydro_cond[0]].index.intersection(hydro_condition.loc[(index[0],index[1]),:][hydro_condition.loc[(index[0],index[1]),:] <= short_term_hydro_cond[1]].index))),:].mean()
-            for seq in range(1,94):
-                gergnd.loc[(index[0],index[1],seq)] = gnd_con
-                gerhid.loc[(index[0],index[1],seq)] = hid_con
-                gerter.loc[(index[0],index[1],seq)] = ter_con
-
-print("Gen by technology")
+    for index, row in gergnd.iterrows():
+        if (index[0],index[1]) <= short_term_date:
+            hydro_cond_index = (index[0],index[1],(i for i in hydro_condition.loc[(index[0],index[1]),:][hydro_condition.loc[(index[0],index[1]),:] >= short_term_hydro_cond[0]].index.intersection(hydro_condition.loc[(index[0],index[1]),:][hydro_condition.loc[(index[0],index[1]),:] <= short_term_hydro_cond[1]].index) if i in wind_cond))
+            gergnd.loc[index,:] = gergnd.loc[hydro_cond_index,:].mean()
+            gerter.loc[index,:] = gerter.loc[hydro_cond_index,:].mean()
+            gerhid.loc[index,:] = gerhid.loc[hydro_cond_index,:].mean()
+        else:
+            break
 
 gnd_year = gergnd.groupby(level = ["Year","Month"]).mean().groupby(level = ["Year"]).sum().stack()
 ter_year = gerter.groupby(level = ["Year","Month"]).mean().groupby(level = ["Year"]).sum().stack()
 hid_year = gerhid.groupby(level = ["Year","Month"]).mean().groupby(level = ["Year"]).sum().stack()
-
-
 gnd_year = gnd_year.reset_index()
 gnd_year = gnd_year.rename(columns = {0:"Values","level_1":"Plant"})
 gnd_year["Technology"] = None
@@ -309,33 +329,38 @@ ter_year = ter_year.reset_index()
 ter_year = ter_year.rename(columns = {0:"Values","level_1":"Plant"})
 ter_year["Technology"] = None
 
+
 for plant in gnd_year["Plant"].unique():
     gnd_year.loc[gnd_year["Plant"] == plant, "Technology"] = dictionary.loc[dictionary["SDDP"] == plant, "Tecnología Inglés"].all()
     if gnd_year.loc[gnd_year["Plant"] == plant, "Technology"].all() == "Hybrid":
         gnd_year.loc[gnd_year["Plant"] == plant, "Technology"] = "Hybrid Solar PV"
+    elif gnd_year.loc[gnd_year["Plant"] == plant, "Technology"].all() == True:
+        print(plant, gnd_year.loc[gnd_year["Plant"] == plant, "Technology"].all())
 
 for plant in hid_year["Plant"].unique():
     hid_year.loc[hid_year["Plant"] == plant, "Technology"] = dictionary.loc[dictionary["SDDP"] == plant, "Tecnología Inglés"].all()
     if hid_year.loc[hid_year["Plant"] == plant, "Technology"].all() == "Hybrid":
         hid_year.loc[hid_year["Plant"] == plant, "Technology"] = "Hybrid Storage"
+    elif hid_year.loc[hid_year["Plant"] == plant, "Technology"].all() == True:
+        print(plant, gnd_year.loc[hid_year["Plant"] == plant, "Technology"].all())
 
 for plant in ter_year["Plant"].unique():
     ter_year.loc[ter_year["Plant"] == plant, "Technology"] = dictionary.loc[dictionary["SDDP"] == plant, "Tecnología Inglés"].all()
+    if ter_year.loc[ter_year["Plant"] == plant, "Technology"].all() == True:
+        print(plant, ter_year.loc[ter_year["Plant"] == plant, "Technology"].all())
 
 
 generation = pd.DataFrame(pd.concat([gnd_year,ter_year,hid_year]))
-
 generation = generation.groupby(["Year","Technology"]).sum()
 generation = generation.unstack(level = 1)
 generation.columns = generation.columns.droplevel(0)
+if previous_gen_flag:
+    for col in generation.columns:
+        if col in previous_gen.index:
+            generation.loc[generation.index[0],col] += previous_gen.loc[col,:].values
+    generation = generation.loc[:,technologies]
+    generation["Total"] = generation.sum(axis = 1)
 
 print(generation)
-for col in generation.columns:
-    if col in previous_gen.index:
-        generation.loc[generation.index[0],col] += previous_gen.loc[col,:].values[0]
-generation = generation.loc[:,technologies]
-generation["Total"] = generation.sum(axis = 1)
 
-print(generation)
-
-export_excel(["Generation"],[2], file_root, output_file_name, English, generation)
+export_excel(["Generation"],[2], file_root, output_file_name, English, colors, generation)
