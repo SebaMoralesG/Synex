@@ -1,6 +1,7 @@
 import pandas as pd
 import os
 from time import process_time
+import matplotlib as plt
 
 
 def readfile(file,rows_skiped, colmns, sheet_name: str or int or list or None = 0):
@@ -143,8 +144,8 @@ t0 = exectime(None, False, t0)
 t0 = exectime("Adding gen by buses...", True, 0)
 gen_by_bus = gen_bus_adder(dbus,cmgbus.columns,gerter.index,gerter,gerhid,gergnd)
 t0 = exectime(None, False, t0)
-# Dem x MgC
 
+# Dem x MgC
 t0 = exectime("Calculating MgC x Demand...", True, 0)
 cmgbus_blck = cmgbus.groupby(level = [0,1,3]).mean()
 dem_x_MgC = data_col_multiplier(demxba, cmgbus_blck, demxba.columns, cmgbus_blck.index)
@@ -162,7 +163,7 @@ t0 = exectime("Tariff Income...", True, 0)
 dem_x_MgC["Total"] = dem_x_MgC.sum(axis = 1)
 gen_x_MgC["Total"] = gen_x_MgC.sum(axis = 1)
 
-Tariff_income = pd.DataFrame(0, columns = ["Dem_x_MgC [M USD]","Gen_x_MgC [M USD]","Tariff_Income [M USD]"],index = dem_x_MgC.index)
+Tariff_income = pd.DataFrame(0, columns = ["    Dem_x_MgC [M USD]","Gen_x_MgC [M USD]","Tariff_Income [M USD]"],index = dem_x_MgC.index)
 Tariff_income["Dem_x_MgC [M USD]"] = dem_x_MgC["Total"]/1000
 Tariff_income["Gen_x_MgC [M USD]"] = gen_x_MgC["Total"]/1000
 Tariff_income["Tariff_Income [M USD]"] = (dem_x_MgC["Total"] - gen_x_MgC["Total"])/1000
@@ -171,9 +172,30 @@ Tariff_income["Demand [GWh]"] = demxba.groupby(level = [0,1,3]).mean().groupby(l
 Tariff_income_y = Tariff_income.groupby(level = 0).sum()
 t0 = exectime(None, False, t0)
 
+gen_by_bus.loc[:,(gen_by_bus != 0).any(axis = 0)].columns
+mean_cmg_gen = cmgbus.loc[:,gen_by_bus.loc[:,(gen_by_bus != 0).any(axis = 0)].columns].groupby(level = [0,1,3]).mean().mean(axis = 1)
+mean_cmg_dem = cmgbus.loc[:,demxba.loc[:,(demxba != 0).any(axis = 0)].columns].groupby(level = [0,1,3]).mean().mean(axis = 1)
+fig = (mean_cmg_dem - mean_cmg_gen).to_csv(os.path.join(file_root,"MgC_diff.csv"))
+df_out = pd.DataFrame(0,index = mean_cmg_dem.index, columns = ["MgC_Dem","MgC_gen","Diff"])
+df_out["MgC_Dem"] = mean_cmg_dem
+df_out["MgC_gen"] = mean_cmg_gen
+df_out["Diff"] = mean_cmg_dem - mean_cmg_gen
+df_out.to_csv(os.path.join(file_root,"MgC_diff.csv"))
+
+gen_by_bus = gen_by_bus.loc[:,(gen_by_bus != 0).any(axis = 0)].mean(axis = 1)
+demxba = demxba.loc[(demxba != 0).any(axis = 0)]
+cmgbus_gen = cmgbus.loc[:,gen_by_bus.columns]
+cmgbus_dem = cmgbus_blck.loc[:,demxba.columns]
+
+(gen_by_bus.groupby(level = [0,1,3]).mean().groupby(level = [0,1]).sum().sum(axis = 1) - demxba.groupby(level = [0,1,3]).mean().groupby(level = [0,1]).sum().sum(axis = 1))/demxba.groupby(level = [0,1,3]).mean().groupby(level = [0,1]).sum().sum(axis = 1)
+
 # Export data
 t0 = exectime("Exporting Data...", True, 0)
 with pd.ExcelWriter(os.path.join(file_root, file), engine = 'xlsxwriter') as writer:
+    gen_by_bus.to_excel(writer, sheet_name = "Gen")
+    demxba.to_excel(writer, sheet_name = "Demxba")
+    cmgbus_dem.to_excel(writer, sheet_name = "MgC_dem")
+    cmgbus_gen.to_excel(writer, sheet_name = "Mgc gen")
     Tariff_income.to_excel(writer, sheet_name = "Tariff_Income_month")
     Tariff_income_y.to_excel(writer, sheet_name = "Tariff_Income_Year")
     Tariff_income["Tariff_Income [M USD]"].unstack(level = 1).to_excel(writer, sheet_name = "Result")
